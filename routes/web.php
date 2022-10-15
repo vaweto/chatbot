@@ -20,3 +20,5 @@ Route::get('/', function () {
 Route::post('/botman', function () {
     app('botman')->listen();
 });
+
+Route::match(['get', 'post'], 'botman-web', [BotManController::class, 'handle']);
