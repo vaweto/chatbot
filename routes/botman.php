@@ -2,20 +2,47 @@
 
 use App\Botman\Conversations\ButtonConversation;
 use App\Botman\Conversations\OnboardingConversation;
+use App\Http\Middleware\Botman\HeardMiddleware;
+use App\Http\Middleware\Botman\ReceivedMiddleware;
 use BotMan\BotMan\Messages\Attachments\Image;
 use BotMan\BotMan\Messages\Attachments\Video;
 use BotMan\BotMan\Messages\Outgoing\OutgoingMessage;
+use BotMan\Middleware\DialogFlow\V2\DialogFlow;
+
 
 $botman = app('botman');
 
-//fallback
-$botman->fallback(function ($bot) {
-    $message = $bot->getMessage();
+$dialogflow = DialogFlow::create()->listenForAction();
+$botman->middleware->received($dialogflow);
 
-    $bot->reply('sorry i dont understand: "'. $message->getText() .'"');
-    $bot->reply('My known commands are:');
-    $bot->reply('Weather in location');
-});
+////called in every incoming message
+//$botman->middleware->received(new ReceivedMiddleware());
+//
+////not executed on fallback only if hearded!!!
+//$botman->middleware->heard(new HeardMiddleware());
+
+
+/**
+ * also
+ *
+ * sendingMiddleware -> sending
+ * Has payload -> depends on driver (has the data that driver wants before hits the external service)
+ *
+ * capturedMiddleware -> captured
+ * ONly inside on conversation it warks like received but for conversation
+ *
+ * matchingMiddleware -> matching
+ * has message and has pattern and regexMatched (boolean)
+ * better declared on command and not global
+ * */
+////fallback
+//$botman->fallback(function ($bot) {
+//    $message = $bot->getMessage();
+//
+//    $bot->reply('sorry i dont understand: "'. $message->getText() .'"');
+//    $bot->reply('My known commands are:');
+//    $bot->reply('Weather in location');
+//});
 
 // Define all bot commands
 $botman->hears('hi(.*)', function($bot) {
@@ -27,15 +54,19 @@ $botman->hears('bye|adios|end', function($bot) {
     $bot->reply('bye bye');
 });
 
-//Capture input
-$botman->hears('Weather in {location}', function($bot, $location) {
+
+//Capture input dialogflow
+$botman->hears('weathersearch', function($bot) {
+    $extras = $bot->getMessage()->getExtras();
+    $location = $extras['apiParameters']['geo-city'];
+
     $url = 'http://api.weatherstack.com/current?access_key=400eea50787fec2a6b07d275a168750f&query='. urlencode($location);
     $response = json_decode(file_get_contents($url));
 
     $bot->reply('The weather in '. $response->location->name . ', ' . $response->location->country . ' is:');
     $bot->reply($response->current->weather_descriptions[0]);
     $bot->reply('Temperature: ' . $response->current->temperature . ' celcius');
-});
+})->middleware($dialogflow);
 
 //Capture with regular expression need better plan on api
 $botman->hears('([0-9]) day forecast for {location}', function($bot, $days, $location) {

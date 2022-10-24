@@ -11,6 +11,7 @@
         "botman/driver-web": "^1.5",
         "botman/tinker": "dev-master",
         "fruitcake/laravel-cors": "^2.0",
+        "genkovich/dialog-flow-bot-man-middleware": "^0.0.6",
         "guzzlehttp/guzzle": "^7.0.1",
         "laravel/framework": "^8.75",
         "laravel/sanctum": "^2.11",
